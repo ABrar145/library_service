@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import * as bookService from "../services/bookService";
 
-export const getAllBooks = async (req: Request, res: Response): Promise<void> => {
+export const getAllBooks = (req: Request, res: Response): void => {
     try {
-        const books = await bookService.getAllBooks(); // Await the result
+        const books = bookService.getAllBooks();
         res.status(200).json({ message: "Books retrieved", data: books });
     } catch (error) {
         res.status(500).json({ message: "Error retrieving books" });
