@@ -189,5 +189,6 @@ export const returnBook = (id: string): Book | null => {
  * console.log(`Got ${recommendations.length} recommendations`);
  */
 export const getRecommendations = (): Book[] => {
+
     return books.filter((b) => !b.isBorrowed).slice(0, 3); // Return 3 available books
 };
