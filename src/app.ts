@@ -7,7 +7,7 @@ app.use(express.json());
 /**
  * Mount the book routes on /api/v1/books
  */
-app.use("/api/v1/books", bookRoutes);
+app.use("", bookRoutes);
 
 /**
  * Default error handler for unmatched routes
