@@ -1,5 +1,6 @@
 import { Book } from "../models/bookModel";
 
+// In-memory book collection (for demo purposes)
 const books: Book[] = [
     {
         id: "1",
@@ -23,123 +24,87 @@ const books: Book[] = [
         isBorrowed: false,
     },
 ];
-
+// Finds a book by its ID
+export const findById = (id: string): Book | undefined => {
+    return books.find((book) => book.id === id);
+};
+/**
+ * Fetches all books in the library.
+ * @returns {Book[]} Array of all books
+ */
 export const getAllBooks = (): Book[] => {
     return books;
 };
 
 /**
  * Adds a new book to the library system.
- *
- * The function uses Omit<Book, 'id' | 'isBorrowed' | 'borrowerId' | 'dueDate'> as its parameter type.
- * This means it creates a new type from the Book interface that excludes those specific fields:
- * - 'id' because we generate it automatically
- * - 'isBorrowed' because all new books start as not borrowed
- * - 'borrowerId' and 'dueDate' because they're only used when a book is borrowed
- *
- * @param bookData - The book information. Must include title, author, and genre.
- * @throws {Error} When required fields (title, author, genre) are missing
- * @returns {Book} The newly created book with generated ID and isBorrowed set to false
- *
- * @example
- * const newBook = addBook({
- *     title: "The Great Gatsby",
- *     author: "F. Scott Fitzgerald",
- *     genre: "Fiction"
- * });
+ * @param bookData - Book data excluding fields that are auto-generated (id, isBorrowed)
+ * @returns {Book} Newly created book with auto-generated ID and isBorrowed set to false
  */
 export const addBook = (
     bookData: Omit<Book, "id" | "isBorrowed" | "borrowerId" | "dueDate">
 ): Book => {
+    // Validate required fields
     if (!bookData.title || !bookData.author || !bookData.genre) {
-        throw new Error(
-            "Missing required fields: title, author, and genre are required"
-        );
+        throw new Error("Missing required fields: title, author, and genre are required");
     }
 
     const newBook: Book = {
-        id: (Math.random() * 10000).toFixed(0),
+        id: (Math.random() * 10000).toFixed(0), // Generate a random ID for the book
         title: bookData.title,
         author: bookData.author,
         genre: bookData.genre,
-        isBorrowed: false,
+        isBorrowed: false, // New books start as not borrowed
     };
 
-    books.push(newBook);
+    books.push(newBook); // Add the new book to the books array
     return newBook;
 };
 
 /**
- * Updates an existing book's information. Certain fields (id, isBorrowed, borrowerId, dueDate)
- * cannot be modified through this function as they are managed by other operations.
- *
- * The Partial<Book> type means all Book fields are optional in the update data.
- * This allows updating only specific fields while leaving others unchanged.
- *
+ * Updates an existing book's information.
  * @param id - The ID of the book to update
- * @param bookData - Partial book data containing fields to update
- * @throws {Error} When book with given ID is not found
- * @returns {Book} The updated book
- *
- * @example
- * const updatedBook = updateBook("123", {
- *     title: "New Title",
- *     genre: "New Genre"
- * });
+ * @param bookData - Partial update for the book
+ * @returns {Book} Updated book
+ * @throws {Error} When the book with the given ID is not found
  */
 export const updateBook = (id: string, bookData: Partial<Book>): Book => {
     const book = books.find((b) => b.id === id);
 
     if (!book) {
-        throw new Error(`Book with ID ${id} not found`);
+        throw new Error(`Book with ID ${id} not found`); // Book not found
     }
 
-    // Create a safe version of bookData without protected fields
+    // Clean up book data (remove protected fields)
     const safeUpdate = { ...bookData };
+    delete safeUpdate.id; // Prevent updating ID
+    delete safeUpdate.isBorrowed; // Prevent changing borrow status
+    delete safeUpdate.borrowerId; // Prevent altering borrower info
+    delete safeUpdate.dueDate; // Prevent modifying due date
 
-    // The following are the protected fields:
-    // Prevent ID changes
-    delete safeUpdate.id;
-    // These fields should only be modified through borrowBook/returnBook
-    delete safeUpdate.isBorrowed;
-    delete safeUpdate.borrowerId;
-    delete safeUpdate.dueDate;
-
+    // Update book information
     Object.assign(book, safeUpdate);
     return book;
 };
 
 /**
  * Removes a book from the library system.
- *
  * @param id - The ID of the book to delete
- * @returns {boolean} True if book was found and deleted, false if book was not found
- *
- * @example
- * const wasDeleted = deleteBook("123");
- * if (wasDeleted) {
- *     console.log("Book was successfully deleted");
- * }
+ * @returns {boolean} True if book was deleted, false if not found
  */
 export const deleteBook = (id: string): boolean => {
     const index = books.findIndex((b) => b.id === id);
-    if (index === -1) return false;
+    if (index === -1) return false; // Book not found
 
-    books.splice(index, 1);
+    books.splice(index, 1); // Remove book from the array
     return true;
 };
 
 /**
- * Marks a book as borrowed by a user and sets a due date 14 days from now.
- *
+ * Marks a book as borrowed by a user.
  * @param id - The ID of the book to borrow
- * @param borrowerId - The ID of the user borrowing the book
- * @throws {Error} When book is not found or is already borrowed
- * @returns {Book} The updated book with borrowing information
- *
- * @example
- * const borrowedBook = borrowBook("123", "user456");
- * console.log(borrowedBook.dueDate);
+ * @param borrowerId - The ID of the borrower
+ * @returns {Book | null} The updated book if borrowed, or null if not available
  */
 export const borrowBook = (id: string, borrowerId: string): Book | null => {
     const book = books.find((b) => b.id === id);
@@ -148,22 +113,16 @@ export const borrowBook = (id: string, borrowerId: string): Book | null => {
         return null; // Book not found or already borrowed
     }
 
-    book.isBorrowed = true;
-    book.borrowerId = borrowerId;
-    book.dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 1 week due date
+    book.isBorrowed = true; // Mark the book as borrowed
+    book.borrowerId = borrowerId; // Assign the borrower ID
+    book.dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // Set due date to 7 days from now
     return book;
 };
 
 /**
  * Marks a book as returned, removing borrower information and due date.
- *
  * @param id - The ID of the book to return
- * @throws {Error} When book is not found or is not currently borrowed
- * @returns {Book} The updated book with borrowing information removed
- *
- * @example
- * const returnedBook = returnBook("123");
- * console.log(returnedBook.isBorrowed); // false
+ * @returns {Book | null} The updated book, or null if it wasn't borrowed
  */
 export const returnBook = (id: string): Book | null => {
     const book = books.find((b) => b.id === id);
@@ -172,23 +131,16 @@ export const returnBook = (id: string): Book | null => {
         return null; // Book not found or not borrowed
     }
 
-    book.isBorrowed = false;
-    delete book.borrowerId;
-    delete book.dueDate;
+    book.isBorrowed = false; // Mark the book as not borrowed
+    delete book.borrowerId; // Remove borrower ID
+    delete book.dueDate; // Remove due date
     return book;
 };
 
 /**
- * Gets a list of recommended books from the library.
- * Right now it returns the first 3 books in the system.
- *
- * @returns {Book[]} Array of up to 3 recommended books
- *
- * @example
- * const recommendations = getRecommendations();
- * console.log(`Got ${recommendations.length} recommendations`);
+ * Gets a list of recommended books (up to 3) that are available for borrowing.
+ * @returns {Book[]} Array of recommended books
  */
 export const getRecommendations = (): Book[] => {
-
-    return books.filter((b) => !b.isBorrowed).slice(0, 3); // Return 3 available books
+    return books.filter((b) => !b.isBorrowed).slice(0, 3); // Return first 3 available books
 };
